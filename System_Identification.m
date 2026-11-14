@@ -7,7 +7,9 @@ B = [[4.26 19.43 0.59 0.01 -0.92]; [-58.88 0.25 0.23 0.02 6.31]; [-101.91 0 -0.7
 C = eye(4);
 D = zeros(4, 5);
 
-m = 5;       % Inputs
+B_Real_Inputs = B(:,1:2);
+
+m = 2;       % Inputs
 p = 4;       % Outputs
 N = 100;
 dt = 1/40;   % 40 Hz sampling
@@ -15,12 +17,12 @@ dt = 1/40;   % 40 Hz sampling
 
 %NOTE: impulse applies a unit-area impulse, meaning a pulse of height 1/Ts
 %mult by dt to get a unit impulse of 1
-sysCT = ss(A,B,C,D);
+sysCT = ss(A,B_Real_Inputs,C,0);
 sysDT = c2d(sysCT,dt,'zoh'); % Could not get impulse function to work as I wanted in CT
 Y = impulse(sysDT, N)*dt;
 
 
-% gets the Markov param (5 inputs and 4 outputs) and puts
+% gets the Markov param (2 inputs and 4 outputs) and puts
 %them into blocks of (y1), y(2), ect.
 for j = 1:m
     for k = 1:N-1
@@ -46,7 +48,7 @@ for j = 1:r
 end
 
 for k = 1:m
-    D_hat(:,k) = Y(1,:,p);
+    D_hat(:,k) = Y(1,:,k);
 end
 
 %SVD
@@ -79,7 +81,7 @@ OrigPolesCT = eig(A);
 estPolesDT = eig(A_hat);
 origPolesDT = pole(sysDT);
 
-% Check bode plot DT
+%Check bode plot DT
 % figure
 % bode(sysDT,'k',estSysDT,'r--');
 % figure
@@ -87,7 +89,21 @@ origPolesDT = pole(sysDT);
 
 %check impulse response
 figure;
-impulse(sysDT,'black',estSysDT,'--');
+impulse(sysCT,'black',estSysCT,'--');
 grid on;
 legend('Original System','Estimated System');
 title('Impulse Response');
+
+% Check Step Response
+figure;
+step(sysCT,'black',estSysCT,'--')
+grid on
+legend('Original System','Estimated System');
+title('Step Response');
+
+Pole_Information = [estPolesCT, OrigPolesCT];
+
+Col = ["Estimated System Poles", "Black Box Poles"];
+Row = ["Pole 1", "Pole 2", "Pole 3", "Pole 4"];
+Table = array2table(Pole_Information, 'VariableNames', Col, 'RowNames', Row);
+disp(Table)
